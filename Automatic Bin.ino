@@ -1,12 +1,12 @@
 #include <Servo.h>
 #include <Wire.h>
-#define trigPin 2
-#define echoPin 3
+#define trigPin 8
+#define echoPin 9
 #define servoPin 4
 #define ledPin 5
 Servo servo;
 
-long duration, distance;
+long distance, duration;
 
 ////////////////////////////////////////////////////////////
 
@@ -26,6 +26,7 @@ void setup()
   pinMode(trigPin, OUTPUT);
   servo.attach(servoPin);
   pinMode(ledPin, OUTPUT);
+  servo.write(90);
 
 }
 
@@ -56,17 +57,27 @@ void loop()
 
   if (distance < 45) {
 
-    servo.write(180);
     digitalWrite(ledPin, HIGH);
+    
+    for (int i = 70; i >= 0; i--) { 
+      servo.write(i);
+      delay(14.2857142857);
+    }
+
     delay(5000);
-    servo.write(0);
+    
+    for (int i = 0; i <= 70; i++) { 
+      servo.write(i);
+      delay(57.1428571429);
+    }
+
     digitalWrite(ledPin, LOW);
 
   } else {
     
-    servo.write(0);
+    servo.write(70);
     delay(1000);
-    digitalWrite(led1, LOW);
+    digitalWrite(ledPin, LOW);
 
   }
 }
