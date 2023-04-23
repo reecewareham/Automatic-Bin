@@ -1,10 +1,20 @@
+#include <LiquidCrystal.h>
 #include <Servo.h>
 #include <Wire.h>
-#define trigPin 8
-#define echoPin 9
-#define servoPin 4
-#define ledPin 5
-Servo servo;
+#include <DS3231.h>
+
+#define servoBinLid 0
+#define servoFreshner 1
+#define trigOutside 2
+#define echoOutside 3
+#define trigInside 4
+#define echoInside 5
+
+DS3231 rtc(SDA, SCL);
+LiquidCrystal LCD(6, 7, 8, 9, 10, 11);
+
+Servo servoLid;
+Servo servoFresh;
 
 long distance, duration;
 
@@ -22,28 +32,58 @@ void setup()
 {
 
   Serial.begin(9600);
-  pinMode(echoPin, INPUT);
-  pinMode(trigPin, OUTPUT);
-  servo.attach(servoPin);
-  pinMode(ledPin, OUTPUT);
-  servo.write(90);
+
+  pinMode(echoOutside, INPUT);
+  pinMode(trigOutside, OUTPUT);
+
+  pinMode(echoInside, INPUT);
+  pinMode(trigInside, OUTPUT);
+
+  servoLid.attach(servoBinLid);
+  servoFresh.attach(servoFreshner);
+  
+  servoLid.write(180);
+  servoFresh.write(180);
+
+  rtc.begin();
+  LCD.begin(16, 2);
+
+  Serial.println("Setup done");
 
 }
 
 void loop()
 {
+
+  if (rtc.getDOWStr() == "Wednesday") {   
+
+   LCD.setCursor(2,0);
+   LCD.print("Tomorrow is");
+   LCD.setCursor(4,1);
+   LCD.print("bin day!");
+
+  } else if (rtc.getDOWStr() == "Thursday") {
+
+   LCD.setCursor(4,0);
+   LCD.print("Today is");
+   LCD.setCursor(4,1);
+   LCD.print("bin day!");
+
+ }
+
+
 ////////////////////////////////////////////////////////////
   /*
   Works out the distance between an object and the ultrasonic sensor.
   */
 ////////////////////////////////////////////////////////////
 
-  digitalWrite(trigPin, 0);
+  digitalWrite(trigOutside, 0);
   delayMicroseconds(2);
-  digitalWrite(trigPin, 1);
+  digitalWrite(trigOutside, 1);
   delayMicroseconds(10);
-  digitalWrite(trigPin, 0);
-  duration = pulseIn(echoPin, 1);
+  digitalWrite(trigOutside, 0);
+  duration = pulseIn(echoOutside, 1);
   distance = duration / 58.2;
   Serial.println(distance);
 
@@ -57,29 +97,54 @@ void loop()
 
   if (distance < 45) {
 
-    digitalWrite(ledPin, HIGH);
-    
-    for (int i = 70; i >= 0; i--) { 
-      servo.write(i);
-      delay(14.2857142857);
+    Serial.println("servo activated");
+
+    for (int i = 180; i >= 110; i--) { 
+      servoLid.write(i);
+      delay(14.2857);
     }
 
     delay(5000);
-    
-    for (int i = 0; i <= 70; i++) { 
-      servo.write(i);
-      delay(57.1428571429);
+
+    long distance2, duration2;
+
+    while (distance2 < 45) {
+      
+      digitalWrite(trigOutside, 0);
+      delayMicroseconds(2);
+      digitalWrite(trigOutside, 1);
+      delayMicroseconds(10);
+      digitalWrite(trigOutside, 0);
+      duration2 = pulseIn(echoOutside, 1);
+      distance2 = duration2 / 58.2;
+      Serial.println(distance2);
+
     }
 
-    digitalWrite(ledPin, LOW);
+    servoFresh.write(130);
+    delay(1000);
+    servoFresh.write(180);
+    
+    for (int i = 110; i <= 180; i++) { 
+      servoLid.write(i);
+      delay(57.1428);
+    }
+
+    LCD.clear();
+    LCD.print("Thank you!");
+    delay(3000);
+    LCD.clear();
+
 
   } else {
     
-    servo.write(70);
+    Serial.println("default");
+    servo.write(180);
     delay(1000);
-    digitalWrite(ledPin, LOW);
+    lcd.clear();
 
   }
+  
 }
 
 /*
