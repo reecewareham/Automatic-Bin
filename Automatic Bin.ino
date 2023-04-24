@@ -9,6 +9,9 @@
 #define echoOutside 3
 #define trigInside 4
 #define echoInside 5
+#define debugButton1 A0
+#define debugButton2 A1
+#define debugButton3 A2
 
 DS3231 rtc(SDA, SCL);
 LiquidCrystal LCD(6, 7, 8, 9, 10, 11);
@@ -18,6 +21,10 @@ Servo servoFresh;
 
 long distanceOut, durationOut;
 long distanceIn, durationIn;
+
+int buttonState1 = 0;
+int buttonState2 = 0;  
+int buttonState3 = 0;  
 
 ////////////////////////////////////////////////////////////
 
@@ -38,6 +45,10 @@ void setup()
   pinMode(echoInside, INPUT);
   pinMode(trigInside, OUTPUT);
 
+  pinMode(debugButton1, INPUT);
+  pinMode(debugButton2, INPUT);
+  pinMode(debugButton3, INPUT);
+
   servoLid.attach(servoBinLid);
   servoFresh.attach(servoFreshner);
   
@@ -52,26 +63,63 @@ void setup()
 void loop()
 {
 
-  
+////////////////////////////////////////////////////////////
+  /*
+  Debug code for changing the day. Used to demonstrate the
+  LCD screen change based on day.
+  */
+////////////////////////////////////////////////////////////
+
+  if (buttonState1 == HIGH) {
+    rtc.setDOW(TUESDAY);
+  } else if (buttonState2 == HIGH) {
+    rtc.setDOW(WEDNESDAY);
+  } else if (buttonState3 == HIGH) {
+    rtc.setDOW(THURSDAY);
+  }
+ 
+  digitalWrite(trigInside, 0);
+  delayMicroseconds(2);
+  digitalWrite(trigInside, 1);
+  delayMicroseconds(10);
+  digitalWrite(trigInside, 0);
+  durationIn = pulseIn(echoInside, 1);
+  distanceIn = durationIn / 58.2;
+
+  if (distanceIn <= 32 && distanceIn >= 25) {
+    LCD.setCursor(9, 1);
+    LCD.print("25%");
+  } else if (distanceIn <= 24 && distanceIn >= 17) {
+    LCD.setCursor(9, 1);
+    LCD.print("50%");
+  } else if (distanceIn <= 16 && distanceIn >= 9) {
+    LCD.setCursor(9, 1);
+    LCD.print("75%");
+  } else if (distanceIn <= 8 && distanceIn >= 0) {
+    LCD.setCursor(8, 1);
+    LCD.print("100%");
+  }
 
   if (rtc.getDOWStr() == "Wednesday") {   
 
-   LCD.setCursor(2,0);
+   LCD.setCursor(0,0);
    LCD.print("Tomorrow is");
-   LCD.setCursor(4,1);
+   LCD.setCursor(0,1);
    LCD.print("bin day!");
 
   } else if (rtc.getDOWStr() == "Thursday") {
 
-   LCD.setCursor(4,0);
+   LCD.setCursor(0,0);
    LCD.print("Today is");
-   LCD.setCursor(4,1);
+   LCD.setCursor(0,1);
    LCD.print("bin day!");
 
  } else {
 
-   LCD.setCursor(4,0);
-   LCD.print("Hello!");
+   LCD.setCursor(0,0);
+   LCD.print("Feed");
+   LCD.setCursor(0,1);
+   LCD.print("me!");
    
 
  }
@@ -124,7 +172,6 @@ void loop()
     delay(3000);
     LCD.clear();
 
-
   } else {
     
     servoLid.write(180);
@@ -134,4 +181,3 @@ void loop()
   }
   
 }
-  
