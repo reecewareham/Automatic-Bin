@@ -16,7 +16,8 @@ LiquidCrystal LCD(6, 7, 8, 9, 10, 11);
 Servo servoLid;
 Servo servoFresh;
 
-long distance, duration;
+long distanceOut, durationOut;
+long distanceIn, durationIn;
 
 ////////////////////////////////////////////////////////////
 
@@ -30,9 +31,7 @@ long distance, duration;
 
 void setup()
 {
-
-  Serial.begin(9600);
-
+  
   pinMode(echoOutside, INPUT);
   pinMode(trigOutside, OUTPUT);
 
@@ -43,17 +42,17 @@ void setup()
   servoFresh.attach(servoFreshner);
   
   servoLid.write(180);
-  servoFresh.write(180);
+  servoFresh.write(0);
 
   rtc.begin();
   LCD.begin(16, 2);
-
-  Serial.println("Setup done");
 
 }
 
 void loop()
 {
+
+  
 
   if (rtc.getDOWStr() == "Wednesday") {   
 
@@ -69,6 +68,12 @@ void loop()
    LCD.setCursor(4,1);
    LCD.print("bin day!");
 
+ } else {
+
+   LCD.setCursor(4,0);
+   LCD.print("Hello!");
+   
+
  }
 
 
@@ -83,9 +88,8 @@ void loop()
   digitalWrite(trigOutside, 1);
   delayMicroseconds(10);
   digitalWrite(trigOutside, 0);
-  duration = pulseIn(echoOutside, 1);
-  distance = duration / 58.2;
-  Serial.println(distance);
+  durationOut = pulseIn(echoOutside, 1);
+  distanceOut = durationOut / 58.2;
 
 ////////////////////////////////////////////////////////////
   /*
@@ -95,9 +99,8 @@ void loop()
   */
 ////////////////////////////////////////////////////////////
 
-  if (distance < 45) {
+  if (distanceOut < 45) {
 
-    Serial.println("servo activated");
 
     for (int i = 180; i >= 110; i--) { 
       servoLid.write(i);
@@ -106,24 +109,10 @@ void loop()
 
     delay(5000);
 
-    long distance2, duration2;
-
-    while (distance2 < 45) {
-      
-      digitalWrite(trigOutside, 0);
-      delayMicroseconds(2);
-      digitalWrite(trigOutside, 1);
-      delayMicroseconds(10);
-      digitalWrite(trigOutside, 0);
-      duration2 = pulseIn(echoOutside, 1);
-      distance2 = duration2 / 58.2;
-      Serial.println(distance2);
-
-    }
-
-    servoFresh.write(130);
+    servoFresh.write(150);
     delay(1000);
-    servoFresh.write(180);
+    servoFresh.write(0);
+    delay(1000);
     
     for (int i = 110; i <= 180; i++) { 
       servoLid.write(i);
@@ -138,24 +127,11 @@ void loop()
 
   } else {
     
-    Serial.println("default");
-    servo.write(180);
+    servoLid.write(180);
     delay(1000);
-    lcd.clear();
+    LCD.clear();
 
   }
   
 }
-
-/*
-  To Do
-
-  1) Notify the user when the bin needs emptying.
-    - Detects if bin is nearly full
-    - Turns on yellow LED to notify user.
-    - Requires DS3231 (Clock module)
-  2) Notify the user when it is bin day.
-    - Checks what day it is, if it matches bin day notify user.
-    - Requires ESP8266 (Wifi Module)
-*/
   
