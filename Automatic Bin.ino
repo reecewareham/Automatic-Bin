@@ -3,15 +3,12 @@
 #include <Wire.h>
 #include <DS3231.h>
 
-#define servoBinLid 0
-#define servoFreshner 1
+#define servoBinLid 12
+#define servoFreshner 13
 #define trigOutside 2
 #define echoOutside 3
 #define trigInside 4
 #define echoInside 5
-#define debugButton1 A0
-#define debugButton2 A1
-#define debugButton3 A2
 
 DS3231 rtc(SDA, SCL);
 LiquidCrystal LCD(6, 7, 8, 9, 10, 11);
@@ -22,16 +19,13 @@ Servo servoFresh;
 long distanceOut, durationOut;
 long distanceIn, durationIn;
 
-int buttonState1 = 0;
-int buttonState2 = 0;  
-int buttonState3 = 0;  
-
 ////////////////////////////////////////////////////////////
 
   /*
-  Setup - Creates a connection on serial 9600. Attaches the
-  servo to pin 4. Attaches the ultrasonic sensor to pins 2
-  and 3 and lastly attaches the led to pin 5.
+  Setup - Attaches outside ultrasonic sensor to pin 2 and 3.
+  Attaches inside sensor to pin 4 and 5. Attaches servos to pins
+  12 and 13. Writes the servos to their default positions.
+  Begins the real time clock and also the LCD screen.
   */
 
 ////////////////////////////////////////////////////////////
@@ -45,10 +39,6 @@ void setup()
   pinMode(echoInside, INPUT);
   pinMode(trigInside, OUTPUT);
 
-  pinMode(debugButton1, INPUT);
-  pinMode(debugButton2, INPUT);
-  pinMode(debugButton3, INPUT);
-
   servoLid.attach(servoBinLid);
   servoFresh.attach(servoFreshner);
   
@@ -56,6 +46,9 @@ void setup()
   servoFresh.write(0);
 
   rtc.begin();
+
+  rtc.setDOW(TUESDAY);
+
   LCD.begin(16, 2);
 
 }
@@ -65,19 +58,44 @@ void loop()
 
 ////////////////////////////////////////////////////////////
   /*
-  Debug code for changing the day. Used to demonstrate the
-  LCD screen change based on day.
+  Checks which day the real time clock is displaying. If the day
+  is thursday, change LCD screen to "Today is Bin Day!", if the day
+  is wednesday, change LCD screen to "Tomorrow is Bin Day!" and if
+  its any other day, change to "Feed Me!".
   */
 ////////////////////////////////////////////////////////////
 
-  if (buttonState1 == HIGH) {
-    rtc.setDOW(TUESDAY);
-  } else if (buttonState2 == HIGH) {
-    rtc.setDOW(WEDNESDAY);
-  } else if (buttonState3 == HIGH) {
-    rtc.setDOW(THURSDAY);
-  }
+  if (rtc.getDOWStr() == "Wednesday") {   
+
+   LCD.setCursor(0,0);
+   LCD.print("Tomorrow is");
+   LCD.setCursor(2,1);
+   LCD.print("Bin Day!");
+
+  } else if (rtc.getDOWStr() == "Thursday") {
+
+   LCD.setCursor(2,0);
+   LCD.print("Today is");
+   LCD.setCursor(2,1);
+   LCD.print("Bin Day!");
+
+ } else {
+
+   LCD.setCursor(6,0);
+   LCD.print("Feed");
+   LCD.setCursor(6,1);
+   LCD.print("Me!");
+   
+ }
+
+ ////////////////////////////////////////////////////////////
+  /*
+  Works out the distance between an object and the ultrasonic sensor
+  on the inside of the bin.
+  */
+////////////////////////////////////////////////////////////
  
+
   digitalWrite(trigInside, 0);
   delayMicroseconds(2);
   digitalWrite(trigInside, 1);
@@ -86,48 +104,33 @@ void loop()
   durationIn = pulseIn(echoInside, 1);
   distanceIn = durationIn / 58.2;
 
-  if (distanceIn <= 32 && distanceIn >= 25) {
-    LCD.setCursor(9, 1);
+  ////////////////////////////////////////////////////////////
+  /*
+  Checks the distance between the rubbish and the ultrasonic
+  sensor and change the percentage displayed on the LCD screen
+  to the correct value.
+  */
+////////////////////////////////////////////////////////////
+
+  if (distanceIn <= 30 && distanceIn >= 25) {
+    LCD.setCursor(13, 1);
     LCD.print("25%");
   } else if (distanceIn <= 24 && distanceIn >= 17) {
-    LCD.setCursor(9, 1);
+    LCD.setCursor(13, 1);
     LCD.print("50%");
   } else if (distanceIn <= 16 && distanceIn >= 9) {
-    LCD.setCursor(9, 1);
+    LCD.setCursor(13, 1);
     LCD.print("75%");
   } else if (distanceIn <= 8 && distanceIn >= 0) {
-    LCD.setCursor(8, 1);
+    LCD.setCursor(12, 1);
     LCD.print("100%");
   }
-
-  if (rtc.getDOWStr() == "Wednesday") {   
-
-   LCD.setCursor(0,0);
-   LCD.print("Tomorrow is");
-   LCD.setCursor(0,1);
-   LCD.print("bin day!");
-
-  } else if (rtc.getDOWStr() == "Thursday") {
-
-   LCD.setCursor(0,0);
-   LCD.print("Today is");
-   LCD.setCursor(0,1);
-   LCD.print("bin day!");
-
- } else {
-
-   LCD.setCursor(0,0);
-   LCD.print("Feed");
-   LCD.setCursor(0,1);
-   LCD.print("me!");
-   
-
- }
 
 
 ////////////////////////////////////////////////////////////
   /*
-  Works out the distance between an object and the ultrasonic sensor.
+  Works out the distance between an object and the ultrasonic sensor
+  on the outside of the bin.
   */
 ////////////////////////////////////////////////////////////
 
@@ -142,13 +145,13 @@ void loop()
 ////////////////////////////////////////////////////////////
   /*
   Checks to see if the distance is less than 45 cm. If it is less, then open
-  bin for 5 seconds and turn on red LED. After the 5 seconds are up, close the
-  bin.
+  bin for 5 seconds. After the 5 seconds are up, close the spray
+  the air freshner for 1 second and slowly close the bin lid.
+  Once finished, display "Thank you!" on the LCD screen.
   */
 ////////////////////////////////////////////////////////////
 
   if (distanceOut < 45) {
-
 
     for (int i = 180; i >= 110; i--) { 
       servoLid.write(i);
@@ -168,8 +171,9 @@ void loop()
     }
 
     LCD.clear();
-    LCD.print("Thank you!");
-    delay(3000);
+    LCD.setCursor(3,0);
+    LCD.print("Thank You!");
+    delay(5000);
     LCD.clear();
 
   } else {
