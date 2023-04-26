@@ -47,8 +47,6 @@ void setup()
 
   rtc.begin();
 
-  rtc.setDOW(TUESDAY);
-
   LCD.begin(16, 2);
 
 }
