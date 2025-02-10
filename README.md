@@ -12,6 +12,10 @@ to create an automatic bin which tells the user when the bin is getting full and
 5. Import the DS3231 library from the repository in the Arduino IDE.
 6. After all the previous steps are complete, the .ino should work correctly.
 
+# Video Demonstration
+
+A video demonstration of the bin in action can be found at https://youtu.be/2BZSayc6scw.
+
 # Libraries Used
 
 Rinky-Dink Electronics. (n.d.). DS3231 Library. http://www.rinkydinkelectronics.com/library.php?id=73
